@@ -1,17 +1,17 @@
-  # Path to your oh-my-zsh installation.
-export ZSH=$HOME/.oh-my-zsh
+# Path to your oh-my-zsh installation.
+export ZSH=/home/unstablereality/.oh-my-zsh
 
 # Set name of the theme to load.
 # Look in ~/.oh-my-zsh/themes/
 # Optionally, if you set this to "random", it'll load a random theme each
 # time that oh-my-zsh is loaded.
-ZSH_THEME="robbyrussell"
+ZSH_THEME="jonathan"
 
 # Uncomment the following line to use case-sensitive completion.
 # CASE_SENSITIVE="true"
 
 # Uncomment the following line to disable bi-weekly auto-update checks.
-# DISABLE_AUTO_UPDATE="true"
+DISABLE_AUTO_UPDATE="true"
 
 # Uncomment the following line to change how often to auto-update (in days).
 # export UPDATE_ZSH_DAYS=13
@@ -45,12 +45,22 @@ ZSH_THEME="robbyrussell"
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git bundler command-not-found github golang heroku node npm rails rvm vongrippen)
+plugins=(git unstablereality)
 
 # User configuration
 
-export PATH="/usr/local/heroku/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/vongrippen/.rvm/bin"
-# export MANPATH="/usr/local/man:$MANPATH"
+EDITOR=/usr/bin/vi
+alias echopath="echo -e ${PATH//:/'\\n'}"
+alias ll="ls -alF"
+alias lh='ls -ah'
+alias ls='ls -al'
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+
+## key bindings
+#bindkey  "^[[H"   beginning-of-line
+#bindkey  "^[[F"   end-of-line
+
+#export MANPATH="/usr/local/man:$MANPATH"
 
 source $ZSH/oh-my-zsh.sh
 
@@ -58,12 +68,11 @@ source $ZSH/oh-my-zsh.sh
 # export LANG=en_US.UTF-8
 
 # Preferred editor for local and remote sessions
-#if [[ -n $SSH_CONNECTION ]]; then
-# export EDITOR='nano'
-#else
-# export EDITOR='atom -w'
-#fi
-export EDITOR='vim'
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
 
 # Compilation flags
 # export ARCHFLAGS="-arch x86_64"
@@ -80,5 +89,8 @@ export EDITOR='vim'
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
+[[ -s "/home/unstablereality/.gvm/scripts/gvm" ]] && source "/home/unstablereality/.gvm/scripts/gvm"
+
+### Added by the Heroku Toolbelt
+export PATH="/usr/local/heroku/bin:$PATH"

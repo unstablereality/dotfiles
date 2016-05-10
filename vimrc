@@ -1,223 +1,159 @@
-set nocompatible              " be iMproved, required
-filetype off                  " required
-
-
-" Ensure vim shells out to zsh
-set shell=/bin/bash
-
-" Use the OS clipboard by default (on versions compiled with `+clipboard`)
-set clipboard=unnamed
-" Enhance command-line completion
-set wildmenu
-" Allow cursor keys in insert mode
-set esckeys
-" Allow backspace in insert mode
-set backspace=indent,eol,start
-" Optimize for fast terminal connections
-set ttyfast
-" Use UTF-8 without BOM
-set encoding=utf-8 nobomb
-" Change mapleader
-let mapleader=","
-" Don’t add empty newlines at the end of files
-set binary
-set noeol
-" Centralize backups, swapfiles and undo history
-" set backupdir=~/.vim/backups
-" set directory=~/.vim/swaps
-" if exists("&undodir")
-"   set undodir=~/.vim/undo
-" endif
-
-" Don’t create backups when editing files in certain directories
-set backupskip=/tmp/*,/private/tmp/*
-
-" Respect modeline in files
-set modeline
-set modelines=4
-" Enable per-directory .vimrc files and disable unsafe commands in them
-set exrc
-set secure
-" Enable line numbers
-set number
-" Enable syntax highlighting
+" load pathogen plugin manager
+execute pathogen#infect()
+filetype off
+set rtp+=$GOROOT/misc/vim
+set background=dark
 syntax on
-" Highlight current line
-" set cursorline
-" Make tabs as wide as two spaces
-set tabstop=2
-" Make tabs two spaces
+" filetype plugin indent on
+
+" show line numbers
+set number
+
+" use spaces instead of tabs
 set expandtab
+
+" disable auto commenting
+autocmd FileType * setlocal formatoptions-=c formatoptions-=r formatoptions-=o
+
+" 1 tab = 2 spaces
 set shiftwidth=2
-set autoindent
-set shiftround
-set smarttab
-set complete-=i
-set showmatch
-set nrformats-=octal
-set ttimeout
-set ttimeoutlen=50
-set autoread
-set fileformats+=mac
+set tabstop=2
 
-" Show “invisible” characters
-set lcs=tab:▸\ ,trail:·,extends:»,precedes:«
-" Show a visual max line length indicator
-set colorcolumn=80
-set textwidth=80
-set list
-" Highlight searches
-set hlsearch
-" Highlight dynamically as pattern is typed
-set incsearch
-" Always show status line
-set laststatus=2
-" Enable mouse in all modes
-set mouse=a
-" Disable error bells
-set noerrorbells
-" Don’t reset cursor to start of line when moving around.
-set nostartofline
-" Show the cursor position
-set ruler
-" Don’t show the intro message when starting Vim
-set shortmess=atI
-" Show the current mode
-set showmode
-" Show the filename in the window titlebar
-set title
-" Show the (partial) command as it’s being typed
-set showcmd
-" Use relative line numbers
-set t_Co=256
-" if exists("&relativenumber")
-" 	set relativenumber
-" 	au BufReadPost * set relativenumber
-" endif
-if !&scrolloff
-  set scrolloff=1
-endif
-if !&sidescrolloff
-  set sidescrolloff=5
-endif
-set display+=lastline
+" taken from http://www.reddit.com/r/vim/comments/e19bu/whats_your_status_line/
 
-" Split in expected directions
-set splitright
-set splitbelow
+"display a warning if fileformat isnt unix
+set statusline+=%#warningmsg#
+set statusline+=%{&ff!='unix'?'['.&ff.']':''}
+set statusline+=%*
 
-filetype plugin indent on
+"display a warning if file encoding isnt utf-8
+set statusline+=%#warningmsg#
+set statusline+=%{(&fenc!='utf-8'&&&fenc!='')?'['.&fenc.']':''}
+set statusline+=%*
 
-" Strip trailing whitespace (,ss)
-function! StripWhitespace()
-	let save_cursor = getpos(".")
-	let old_query = getreg('/')
-	:%s/\s\+$//e
-	call setpos('.', save_cursor)
-	call setreg('/', old_query)
+set statusline+=%h      "help file flag
+set statusline+=%y      "filetype
+set statusline+=%r      "read only flag
+set statusline+=%m      "modified flag
+
+" display current git branch
+set statusline+=%{fugitive#statusline()}
+
+"display a warning if &et is wrong, or we have mixed-indenting
+set statusline+=%#error#
+set statusline+=%{StatuslineTabWarning()}
+set statusline+=%*
+
+set statusline+=%{StatuslineTrailingSpaceWarning()}
+
+"display a warning if &paste is set
+set statusline+=%#error#
+set statusline+=%{&paste?'[paste]':''}
+set statusline+=%*
+
+set statusline+=%=      "left/right separator
+set statusline+=%{StatuslineCurrentHighlight()}\ \ "current highlight
+set statusline+=%c,     "cursor column
+set statusline+=%l/%L   "cursor line/total lines
+set statusline+=\ %P    "percent through file
+set laststatus=2        " Always show status line
+
+"return the syntax highlight group under the cursor ''
+function! StatuslineCurrentHighlight()
+    let name = synIDattr(synID(line('.'),col('.'),1),'name')
+    if name == ''
+        return ''
+    else
+        return '[' . name . ']'
+    endif
 endfunction
 
-" Be smarter about mouse support in tmux
-set mouse+=a
-if &term =~ '^screen'
-  set ttymouse=xterm2
-endif
+"recalculate the trailing whitespace warning when idle, and after saving
+autocmd cursorhold,bufwritepost * unlet! b:statusline_trailing_space_warning
 
-" Strip all whitespace
-noremap <leader>ss :call StripWhitespace()<CR>
-" Save a file as root (,W)
-noremap <leader>W :w !sudo tee % > /dev/null<CR>
+"return '[\s]' if trailing white space is detected
+"return '' otherwise
+function! StatuslineTrailingSpaceWarning()
+    if !exists("b:statusline_trailing_space_warning")
+        if search('\s\+$', 'nw') != 0
+            let b:statusline_trailing_space_warning = '[\s]'
+        else
+            let b:statusline_trailing_space_warning = ''
+        endif
+    endif
+    return b:statusline_trailing_space_warning
+endfunction
 
-" up/down work as expected with word wrapping on
-nnoremap k gk
-nnoremap j gj
-nnoremap gk k
-nnoremap gj j
+"return '[&et]' if &et is set wrong
+"return '[mixed-indenting]' if spaces and tabs are used to indent
+"return an empty string if everything is fine
+function! StatuslineTabWarning()
+    if !exists("b:statusline_tab_warning")
+        let tabs = search('^\t', 'nw') != 0
+        let spaces = search('^ ', 'nw') != 0
 
-" use standard regular expressions instead of out of the box vim
-nnoremap / /\v
-xnoremap / /\v
+        if tabs && spaces
+            let b:statusline_tab_warning =  '[mixed-indenting]'
+        elseif (spaces && !&et) || (tabs && &et)
+            let b:statusline_tab_warning = '[&et]'
+        else
+            let b:statusline_tab_warning = ''
+        endif
+    endif
+    return b:statusline_tab_warning
+endfunction
 
-
-
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
-" alternatively, pass a path where Vundle should install plugins
-"call vundle#begin('~/some/path/here')
-
-" let Vundle manage Vundle, required
-Plugin 'VundleVim/Vundle.vim'
-
+"return a warning for "long lines" where "long" is either &textwidth or 80 (if
+"no &textwidth is set)
 "
-" Plugins here
-"
-" Plugin 'powerline/powerline'
-Plugin 'Shougo/neocomplete.vim'
-Plugin 'ctrlpvim/ctrlp.vim'
-Plugin 'scrooloose/nerdtree'
-" Plugin 'scrooloose/syntastic'
-Plugin 'tpope/vim-fugitive'
-Plugin 'vim-airline/vim-airline'
+"return '' if no long lines
+"return '[#x,my,$z] if long lines are found, were x is the number of long
+"lines, y is the median length of the long lines and z is the length of the
+"longest line
+function! StatuslineLongLineWarning()
+    if !exists("b:statusline_long_line_warning")
+        let long_line_lens = s:LongLines()
 
-" All of your Plugins must be added before the following line
-call vundle#end()            " required
-filetype plugin indent on    " required
-" To ignore plugin indent changes, instead use:
-"filetype plugin on
-"
-" Brief help
-" :PluginList       - lists configured plugins
-" :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
-" :PluginSearch foo - searches for foo; append `!` to refresh local cache
-" :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
-"
-" see :h vundle for more details or wiki for FAQ
-" Put your non-Plugin stuff after this line
-" Plugin: ctrl-p
-if executable('ag')
-  " Use the silver searcher when available
-  set grepprg=ag\ --nogroup\ --nocolor
-  let g:ctrlp_user_command = 'ag %s -l --nocolor -g ""'
-  let g:ctrlp_use_caching = 0
-else
-  " Otherwise, we need our own custom ignores
-  let g:ctrlp_custom_ignore = {
-    \ 'dir': '\v[\/](node_modules|bower_components|coverage|tmp|\.git|\.hg|\.svn)$',
-    \ 'file': '\v(\.exe|\.zip|\.DS_Store|\.swp|\.ico)$',
-    \ }
-endif
+        if len(long_line_lens) > 0
+            let b:statusline_long_line_warning = "[" .
+                        \ '#' . len(long_line_lens) . "," .
+                        \ 'm' . s:Median(long_line_lens) . "," .
+                        \ '$' . max(long_line_lens) . "]"
+        else
+            let b:statusline_long_line_warning = ""
+        endif
+    endif
+    return b:statusline_long_line_warning
+endfunction
 
-" Plugin: NERDTree
-map <C-n> :NERDTreeToggle<CR>
-let NERDTreeShowHidden=1
-let NERDTreeIgnore = ['\.DS_Store','\.git','\.svn','\.sass-cache$']
-autocmd StdinReadPre * let s:std_in=1
-au VimEnter *  if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+"return a list containing the lengths of the long lines in this buffer
+function! s:LongLines()
+    let threshold = (&tw ? &tw : 80)
+    let spaces = repeat(" ", &ts)
 
-" Plugin: matchit
-" runtime! macros/matchit.vim
+    let long_line_lens = []
 
-" Plugin: vim-airline
- if !exists('g:airline_symbols')
-    let g:airline_symbols = {}
-  endif
-let g:airline_left_sep = ''
-let g:airline_right_sep =  ''
-let g:airline_symbols.branch = ''
+    let i = 1
+    while i <= line("$")
+        let len = strlen(substitute(getline(i), '\t', spaces, 'g'))
+        if len > threshold
+            call add(long_line_lens, len)
+        endif
+        let i += 1
+    endwhile
 
-" Automatic commands
-if has("autocmd")
-	" Enable file type detection
-	filetype on
-	" Treat .json files as .js
-	autocmd BufNewFile,BufRead *.json setfiletype json syntax=javascript
-	" Treat .md files as Markdown
-	autocmd BufNewFile,BufRead *.md setlocal filetype=markdown
-endif
+    return long_line_lens
+endfunction
 
-" NeoComplete
-let g:acp_enableAtStartup = 0
-let g:neocomplete#enable_at_startup = 1
-let g:neocomplete#enable_smart_case = 1
-inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+"find the median of the given array of numbers
+function! s:Median(nums)
+    let nums = sort(a:nums)
+    let l = len(nums)
+
+    if l % 2 == 1
+        let i = (l-1) / 2
+        return nums[i]
+    else
+        return (nums[l/2] + nums[(l/2)-1]) / 2
+    endif
+endfunction
